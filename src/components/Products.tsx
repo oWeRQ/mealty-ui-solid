@@ -50,7 +50,13 @@ const Products: Component = () => {
 
     const unselectProduct = (product: IMealtyProduct) => {
         setProductsByDay((days) => {
-            return days.map(products => products.filter(p => p !== product));
+            return days.map(products => {
+                if (products.includes(product)) {
+                    return products.filter(p => p !== product);
+                }
+
+                return products;
+            });
         });
 
         saveStorage();
