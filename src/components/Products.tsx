@@ -56,7 +56,7 @@ const Products: Component = () => {
         saveStorage();
     };
 
-    createEffect(on(products, loadStorage));
+    createEffect(on(products, loadStorage, { defer: true }));
 
     return (
         <div class="p-4">
