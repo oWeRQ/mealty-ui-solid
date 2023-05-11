@@ -1,12 +1,19 @@
-import { Component, For, createEffect, createResource, createSignal, on } from 'solid-js';
+import { Component, For, createEffect, createMemo, createResource, createSignal, on } from 'solid-js';
 import { IMealtyProduct, fetchProducts } from '../mealty';
 import ProductCard from './ProductCard';
 import ProductsSummary from './ProductsSummary';
 
 const Products: Component = () => {
     const [search, setSearch] = createSignal('');
+    const [maxPrice, setMaxPrice] = createSignal<number>(Infinity);
     const [products] = createResource(fetchProducts);
     const [productsByDay, setProductsByDay] = createSignal<IMealtyProduct[][]>([]);
+
+    const priceRange = createMemo(() => {
+        return products()?.reduce((acc, cur) => {
+            return [Math.min(acc[0], +cur.price), Math.max(acc[1], +cur.price)];
+        }, [Infinity, 0]) ?? [0, 0];
+    });
 
     const selectedProducts = () => productsByDay().flat();
 
@@ -15,6 +22,9 @@ const Products: Component = () => {
         const searchValue = search().toLowerCase();
         return products()?.filter(product => {
             if (without.has(product))
+                return false;
+
+            if (+product.price > maxPrice())
                 return false;
             
             return (
@@ -74,6 +84,10 @@ const Products: Component = () => {
 
     createEffect(on(products, loadStorage, { defer: true }));
 
+    createEffect(() => {
+        setMaxPrice(priceRange()[1]);
+    });
+
     return (
         <div class="p-4">
             <div class="mb-4 grid grid-cols-5 gap-x-4">
@@ -104,6 +118,19 @@ const Products: Component = () => {
             <hr class="my-4" />
 
             <h2 class="text-xl font-bold mb-2">Available</h2>
+            <div>
+                Price:
+                <input
+                    class="m-2 align-middle"
+                    type="range"
+                    min={priceRange()[0]}
+                    max={priceRange()[1]}
+                    step={10}
+                    value={maxPrice()}
+                    onInput={e => setMaxPrice(+e.currentTarget.value)}
+                />
+                {maxPrice()}
+            </div>
             <input
                 type="text"
                 value={search()}
