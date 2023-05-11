@@ -1,4 +1,4 @@
-import { Component, For, createResource, createSignal } from 'solid-js';
+import { Component, For, createEffect, createResource, createSignal, on } from 'solid-js';
 import { IMealtyProduct, getProducts } from '../mealty';
 import ProductCard from './ProductCard';
 import ProductsSummary from './ProductsSummary';
@@ -14,6 +14,19 @@ const Products: Component = () => {
         return products()?.filter(product => !without.has(product));
     };
 
+    const saveStorage = () => {
+        const data = productsByDay().map((products) => products.map((product) => product.id));
+        window.localStorage.setItem('productsByDay', JSON.stringify(data));
+    };
+
+    const loadStorage = () => {
+        try {
+            const productsValue = products() ?? [];
+            const data: string[][] = JSON.parse(window.localStorage.getItem('productsByDay') || '[]');
+            setProductsByDay(data.map((productIds) => productsValue.filter((product) => productIds.includes(product.id))));
+        } catch (e) {}
+    };
+
     const addDay = () => {
         setProductsByDay(days => [...days, []]);
     };
@@ -23,6 +36,8 @@ const Products: Component = () => {
             return;
 
         setProductsByDay(days => days.filter((_, i) => i !== index));
+
+        saveStorage();
     };
     
     const selectProduct = (product: IMealtyProduct) => {
@@ -33,13 +48,19 @@ const Products: Component = () => {
         setProductsByDay((days) => {
             return [...days.slice(0, -1), [...days.at(-1)!, product]];
         });
+
+        saveStorage();
     };
 
     const unselectProduct = (product: IMealtyProduct) => {
         setProductsByDay((days) => {
             return days.map(products => products.filter(p => p !== product));
         });
+
+        saveStorage();
     };
+
+    createEffect(on(products, loadStorage));
 
     return (
         <div class="p-4">
