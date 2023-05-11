@@ -22,6 +22,8 @@ export type IMealtyCategoryWithProducts = IMealtyCategory & {
     products: IMealtyProduct[];
 };
 
-export const fetchProducts = async (): Promise<IMealtyProduct[]> => (await fetch(`http://localhost:3001/api/v1/products`)).json();
+export const apiResource = <T>(resource: string) => async (): Promise<T> => (await fetch(`http://localhost:3001/api/v1/${resource}`)).json();
 
-export const fetchCategories = async (): Promise<IMealtyProduct[]> => (await fetch(`http://localhost:3001/api/v1/categories`)).json();
+export const fetchProducts = apiResource<IMealtyProduct[]>('products');
+
+export const fetchCategories = apiResource<IMealtyCategoryWithProducts[]>('categories');

@@ -4,6 +4,7 @@ import ProductCard from './ProductCard';
 import ProductsSummary from './ProductsSummary';
 
 const Products: Component = () => {
+    const [search, setSearch] = createSignal('');
     const [products] = createResource(fetchProducts);
     const [productsByDay, setProductsByDay] = createSignal<IMealtyProduct[][]>([]);
 
@@ -11,7 +12,16 @@ const Products: Component = () => {
 
     const availableProducts = () => {
         const without = new Set(selectedProducts());
-        return products()?.filter(product => !without.has(product));
+        const searchValue = search().toLowerCase();
+        return products()?.filter(product => {
+            if (without.has(product))
+                return false;
+            
+            return (
+                product.name.toLowerCase().includes(searchValue) ||
+                product.note.toLowerCase().includes(searchValue)
+            );
+        });
     };
 
     const saveStorage = () => {
@@ -94,6 +104,12 @@ const Products: Component = () => {
             <hr class="my-4" />
 
             <h2 class="text-xl font-bold mb-2">Available</h2>
+            <input
+                type="text"
+                value={search()}
+                onInput={e => setSearch(e.currentTarget.value)}
+                placeholder='Search...'
+            />
             <div class="p-4 grid grid-cols-8 gap-x-4 gap-y-8">
                 <For each={availableProducts()}>
                     {product => (<ProductCard product={product} onAdd={() => selectProduct(product)} />)}
