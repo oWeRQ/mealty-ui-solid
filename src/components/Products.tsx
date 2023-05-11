@@ -1,10 +1,10 @@
 import { Component, For, createEffect, createResource, createSignal, on } from 'solid-js';
-import { IMealtyProduct, getProducts } from '../mealty';
+import { IMealtyProduct, fetchProducts } from '../mealty';
 import ProductCard from './ProductCard';
 import ProductsSummary from './ProductsSummary';
 
 const Products: Component = () => {
-    const [products] = createResource(getProducts);
+    const [products] = createResource(fetchProducts);
     const [productsByDay, setProductsByDay] = createSignal<IMealtyProduct[][]>([]);
 
     const selectedProducts = () => productsByDay().flat();
@@ -41,12 +41,8 @@ const Products: Component = () => {
     };
     
     const selectProduct = (product: IMealtyProduct) => {
-        if (productsByDay().length === 0) {
-            addDay();
-        }
-
         setProductsByDay((days) => {
-            return [...days.slice(0, -1), [...days.at(-1)!, product]];
+            return [...days.slice(0, -1), [...(days.at(-1) ?? []), product]];
         });
 
         saveStorage();
