@@ -1,13 +1,22 @@
 import { Component, For, createEffect, createMemo, createResource, createSignal, on } from 'solid-js';
-import { IMealtyProduct, fetchProducts } from '../mealty';
+import { IMealtyProduct, fetchCategories } from '../mealty';
 import ProductCard from './ProductCard';
 import ProductsSummary from './ProductsSummary';
+import { IMealtyCategoryWithProducts } from '../mealty';
 
 const Products: Component = () => {
     const [search, setSearch] = createSignal('');
     const [maxPrice, setMaxPrice] = createSignal<number>(Infinity);
-    const [products] = createResource(fetchProducts);
     const [productsByDay, setProductsByDay] = createSignal<IMealtyProduct[][]>([]);
+    const [selectedCategories, setSelectedCategories] = createSignal<IMealtyCategoryWithProducts[]>([]);
+    const [categories] = createResource(fetchCategories);
+
+    const categoriesUnique = createMemo(() => categories()?.filter(c => c.id != '0'));
+
+    const products = createMemo(() => {
+        const categoriesValue = selectedCategories().length ? selectedCategories() : categoriesUnique() ?? [];
+        return categoriesValue.flatMap(c => c.products);
+    });
 
     const priceRange = createMemo(() => {
         return products()?.reduce((acc, cur) => {
@@ -82,6 +91,16 @@ const Products: Component = () => {
         saveStorage();
     };
 
+    const toggleCategory = (category: IMealtyCategoryWithProducts) => {
+        setSelectedCategories(selected => {
+            if (selected.includes(category)) {
+                return selected.filter(c => c !== category);
+            } else {   
+                return [...selected, category];
+            }
+        });
+    };
+
     createEffect(on(products, loadStorage, { defer: true }));
 
     createEffect(() => {
@@ -121,6 +140,15 @@ const Products: Component = () => {
                 Available
                 <span class="text-slate-400"> ({availableProducts().length})</span>
             </h2>
+            <div>
+                <For each={categoriesUnique()}>
+                    {category => (
+                        <label class="mr-4">
+                            <input type="checkbox" onChange={() => toggleCategory(category)} /> {category.title}
+                        </label>
+                    )}
+                </For>
+            </div>
             <div>
                 Price:
                 <input
