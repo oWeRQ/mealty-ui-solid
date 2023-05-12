@@ -108,12 +108,12 @@ const Products: Component = () => {
     const checkLimit = () => {
         const currentDayPrice = productsByDay().at(-1)?.reduce((acc, cur) => acc + +cur.price, 0) ?? 0;
         const maxPriceValue = dayLimit() - currentDayPrice;
-        console.log('checkLimit', maxPriceValue, priceRange()[0]);
+        const [priceFrom, priceTo] = priceRange();
 
-        if (maxPriceValue >= priceRange()[0]) {
-            setMaxPrice(maxPriceValue);
+        if (maxPriceValue >= priceFrom) {
+            setMaxPrice(Math.min(priceTo, maxPriceValue));
         } else {
-            setMaxPrice(priceRange()[1]);
+            setMaxPrice(priceTo);
             addDay();
         }
     };
