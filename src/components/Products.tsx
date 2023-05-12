@@ -15,9 +15,9 @@ const Products: Component = () => {
         }, [Infinity, 0]) ?? [0, 0];
     });
 
-    const selectedProducts = () => productsByDay().flat();
+    const selectedProducts = createMemo(() => productsByDay().flat());
 
-    const availableProducts = () => {
+    const availableProducts = createMemo(() => {
         const without = new Set(selectedProducts());
         const searchValue = search().toLowerCase();
         return products()?.filter(product => {
@@ -31,8 +31,8 @@ const Products: Component = () => {
                 product.name.toLowerCase().includes(searchValue) ||
                 product.note.toLowerCase().includes(searchValue)
             );
-        });
-    };
+        }) ?? [];
+    });
 
     const saveStorage = () => {
         const data = productsByDay().map((products) => products.map((product) => product.id));
@@ -101,7 +101,7 @@ const Products: Component = () => {
                             <ProductsSummary products={products} />
                         </div>
                         <div class="flex-grow p-4 grid grid-cols-2 gap-x-4 gap-y-8 bg-gray-100 rounded-lg">
-                            <For each={products}>
+                            <For each={products} fallback={<div class="text-slate-400">No items</div>}>
                                 {product => (<ProductCard product={product} onRemove={() => unselectProduct(product)} />)}
                             </For>
                         </div>
@@ -117,7 +117,10 @@ const Products: Component = () => {
             </div>
             <hr class="my-4" />
 
-            <h2 class="text-xl font-bold mb-2">Available</h2>
+            <h2 class="text-xl font-bold mb-2">
+                Available
+                <span class="text-slate-400"> ({availableProducts().length})</span>
+            </h2>
             <div>
                 Price:
                 <input
@@ -138,7 +141,7 @@ const Products: Component = () => {
                 placeholder='Search...'
             />
             <div class="p-4 grid grid-cols-8 gap-x-4 gap-y-8">
-                <For each={availableProducts()}>
+                <For each={availableProducts()} fallback={<div class="text-slate-400">No items</div>}>
                     {product => (<ProductCard product={product} onAdd={() => selectProduct(product)} />)}
                 </For>
             </div>
