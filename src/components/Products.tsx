@@ -13,13 +13,17 @@ const Products: Component = () => {
 
     const categoriesUnique = createMemo(() => categories()?.filter(c => c.id != '0'));
 
-    const products = createMemo(() => {
+    const allProducts = createMemo(() => {
+        return categoriesUnique()?.flatMap(c => c.products);
+    });
+
+    const selectableProducts = createMemo(() => {
         const categoriesValue = selectedCategories().length ? selectedCategories() : categoriesUnique() ?? [];
         return categoriesValue.flatMap(c => c.products);
     });
 
     const priceRange = createMemo(() => {
-        return products()?.reduce((acc, cur) => {
+        return selectableProducts()?.reduce((acc, cur) => {
             return [Math.min(acc[0], +cur.price), Math.max(acc[1], +cur.price)];
         }, [Infinity, 0]) ?? [0, 0];
     });
@@ -29,7 +33,7 @@ const Products: Component = () => {
     const availableProducts = createMemo(() => {
         const without = new Set(selectedProducts());
         const searchValue = search().toLowerCase();
-        return products()?.filter(product => {
+        return selectableProducts()?.filter(product => {
             if (without.has(product))
                 return false;
 
@@ -50,7 +54,7 @@ const Products: Component = () => {
 
     const loadStorage = () => {
         try {
-            const productsValue = products() ?? [];
+            const productsValue = allProducts() ?? [];
             const data: string[][] = JSON.parse(window.localStorage.getItem('productsByDay') || '[]');
             setProductsByDay(data.map((productIds) => productsValue.filter((product) => productIds.includes(product.id))));
         } catch (e) {}
@@ -101,7 +105,7 @@ const Products: Component = () => {
         });
     };
 
-    createEffect(on(products, loadStorage, { defer: true }));
+    createEffect(on(allProducts, loadStorage, { defer: true }));
 
     createEffect(() => {
         setMaxPrice(priceRange()[1]);
