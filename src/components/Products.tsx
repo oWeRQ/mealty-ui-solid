@@ -6,6 +6,7 @@ import { arrayRange } from '../functions/arrayRange';
 import { gcd } from '../functions/gcd';
 
 const Products: Component = () => {
+    const [dayLimit, setDayLimit] = createSignal(370);
     const [search, setSearch] = createSignal('');
     const [maxPrice, setMaxPrice] = createSignal<number>(Infinity);
     const [productsByDay, setProductsByDay] = createSignal<IMealtyProduct[][]>([]);
@@ -71,7 +72,7 @@ const Products: Component = () => {
 
         saveStorage();
     };
-    
+
     const selectProduct = (product: IMealtyProduct) => {
         setProductsByDay((days) => {
             return [...days.slice(0, -1), [...(days.at(-1) ?? []), product]];
@@ -104,11 +105,22 @@ const Products: Component = () => {
         });
     };
 
-    createEffect(on(allProducts, loadStorage, { defer: true }));
+    const checkLimit = () => {
+        const currentDayPrice = productsByDay().at(-1)?.reduce((acc, cur) => acc + +cur.price, 0) ?? 0;
+        const maxPriceValue = dayLimit() - currentDayPrice;
+        console.log('checkLimit', maxPriceValue, priceRange()[0]);
 
-    createEffect(() => {
-        setMaxPrice(priceRange()[1]);
-    });
+        if (maxPriceValue >= priceRange()[0]) {
+            setMaxPrice(maxPriceValue);
+        } else {
+            setMaxPrice(priceRange()[1]);
+            addDay();
+        }
+    };
+
+    createEffect(checkLimit);
+
+    createEffect(on(allProducts, loadStorage, { defer: true }));
 
     return (
         <div class="p-4">
@@ -131,7 +143,17 @@ const Products: Component = () => {
                 </For>
             </div>
             <div class="flex justify-between items-center">
-                <button class="inline-flex justify-center rounded-md bg-indigo-600 py-3 px-6 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500" onClick={addDay}>Add Day</button>
+                <div>
+                    <button class="inline-flex justify-center rounded-md bg-indigo-600 py-3 px-6 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500" onClick={addDay}>Add Day</button>
+                    <span class="mx-4">Day limit:</span>
+                    <input
+                        class="p-2 w-[100px] ring-1 rounded-md"
+                        type="number"
+                        min={1}
+                        value={dayLimit()}
+                        onInput={e => setDayLimit(+e.currentTarget.value)}
+                    />
+                </div>
                 <div>
                     <div class="text-gray-500">Summary:</div>
                     <ProductsSummary products={selectedProducts()} />
