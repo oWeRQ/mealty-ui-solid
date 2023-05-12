@@ -114,7 +114,9 @@ const Products: Component = () => {
             setMaxPrice(Math.min(priceTo, maxPriceValue));
         } else {
             setMaxPrice(priceTo);
-            addDay();
+            if (currentDayPrice > 0) {
+                addDay();
+            }
         }
     };
 
@@ -149,7 +151,7 @@ const Products: Component = () => {
                     <input
                         class="p-2 w-[100px] ring-1 rounded-md"
                         type="number"
-                        min={1}
+                        min={priceRange()[0]}
                         value={dayLimit()}
                         onInput={e => setDayLimit(+e.currentTarget.value)}
                     />
