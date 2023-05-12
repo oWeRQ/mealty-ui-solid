@@ -1,8 +1,9 @@
 import { Component, For, createEffect, createMemo, createResource, createSignal, on } from 'solid-js';
-import { IMealtyProduct, fetchCategories } from '../mealty';
+import { IMealtyCategoryWithProducts, IMealtyProduct, fetchCategories } from '../mealty';
 import ProductCard from './ProductCard';
 import ProductsSummary from './ProductsSummary';
-import { IMealtyCategoryWithProducts } from '../mealty';
+import { arrayRange } from '../functions/arrayRange';
+import { gcd } from '../functions/gcd';
 
 const Products: Component = () => {
     const [search, setSearch] = createSignal('');
@@ -22,11 +23,9 @@ const Products: Component = () => {
         return categoriesValue.flatMap(c => c.products);
     });
 
-    const priceRange = createMemo(() => {
-        return selectableProducts()?.reduce((acc, cur) => {
-            return [Math.min(acc[0], +cur.price), Math.max(acc[1], +cur.price)];
-        }, [Infinity, 0]) ?? [0, 0];
-    });
+    const priceRange = createMemo(() => arrayRange(selectableProducts().map(p => +p.price)));
+
+    const priceStep = createMemo(() => gcd(priceRange()[0], priceRange()[1]));
 
     const selectedProducts = createMemo(() => productsByDay().flat());
 
@@ -160,7 +159,7 @@ const Products: Component = () => {
                     type="range"
                     min={priceRange()[0]}
                     max={priceRange()[1]}
-                    step={10}
+                    step={priceStep()}
                     value={maxPrice()}
                     onInput={e => setMaxPrice(+e.currentTarget.value)}
                 />
