@@ -1,4 +1,4 @@
-import { Component, For, createEffect, createMemo, createResource, createSignal, on } from 'solid-js';
+import { Component, For, createEffect, createMemo, createResource, createSignal } from 'solid-js';
 import { arrayRange } from '../functions/arrayRange';
 import { gcd } from '../functions/gcd';
 import useLocalStorage from '../hooks/useLocalStorage';
@@ -7,12 +7,14 @@ import ProductCard from './ProductCard';
 import ProductsSummary from './ProductsSummary';
 
 const Products: Component = () => {
-    const [dayLimit, setDayLimit] = createSignal(370);
     const [search, setSearch] = createSignal('');
     const [maxPrice, setMaxPrice] = createSignal<number>(Infinity);
     const [productsByDay, setProductsByDay] = createSignal<IMealtyProduct[][]>([]);
-    const [productsByDayStorage, setProductsByDayStorage] = useLocalStorage<string[][]>('productsByDay', []);
     const [selectedCategories, setSelectedCategories] = createSignal<IMealtyCategoryWithProducts[]>([]);
+
+    const [productsByDayStorage, setProductsByDayStorage] = useLocalStorage<string[][]>('productsByDay', []);
+    const [dayLimit, setDayLimit] = useLocalStorage('dayLimit', 370);
+
     const [categories] = createResource(fetchCategories);
 
     const categoriesUnique = createMemo(() => categories()?.filter(c => c.id != '0'));
@@ -25,6 +27,8 @@ const Products: Component = () => {
         const categoriesValue = selectedCategories().length ? selectedCategories() : categoriesUnique() ?? [];
         return categoriesValue.flatMap(c => c.products);
     });
+
+    const currentDayPrice = createMemo(() => productsByDay().at(-1)?.reduce((acc, cur) => acc + +cur.price, 0) ?? 0);
 
     const priceRange = createMemo(() => arrayRange(selectableProducts().map(p => +p.price)));
 
@@ -49,19 +53,6 @@ const Products: Component = () => {
         }) ?? [];
     });
 
-    const saveStorage = () => {
-        const data = productsByDay().map((products) => products.map((product) => product.id));
-        setProductsByDayStorage(data);
-    };
-
-    const loadStorage = () => {
-        try {
-            const productsValue = allProducts() ?? [];
-            const data: string[][] = productsByDayStorage();
-            setProductsByDay(data.map((productIds) => productsValue.filter((product) => productIds.includes(product.id))));
-        } catch (e) {}
-    };
-
     const addDay = () => {
         setProductsByDay(days => [...days, []]);
     };
@@ -71,16 +62,12 @@ const Products: Component = () => {
             return;
 
         setProductsByDay(days => days.filter((_, i) => i !== index));
-
-        saveStorage();
     };
 
     const selectProduct = (product: IMealtyProduct) => {
         setProductsByDay((days) => {
             return [...days.slice(0, -1), [...(days.at(-1) ?? []), product]];
         });
-
-        saveStorage();
     };
 
     const unselectProduct = (product: IMealtyProduct) => {
@@ -93,8 +80,6 @@ const Products: Component = () => {
                 return products;
             });
         });
-
-        saveStorage();
     };
 
     const toggleCategory = (category: IMealtyCategoryWithProducts) => {
@@ -107,24 +92,40 @@ const Products: Component = () => {
         });
     };
 
-    const checkLimit = () => {
-        const currentDayPrice = productsByDay().at(-1)?.reduce((acc, cur) => acc + +cur.price, 0) ?? 0;
-        const maxPriceValue = dayLimit() - currentDayPrice;
+    let isStorageLoaded = false;
+
+    createEffect(() => {
+        const productsByDayValue = productsByDay();
+        if (isStorageLoaded) {
+            const getProductIds = (products: IMealtyProduct[]) => products.map((product) => product.id);
+            setProductsByDayStorage(productsByDayValue.map(getProductIds));
+        }
+    });
+
+    createEffect(() => {
+        try {
+            const allProductsValue = allProducts();
+            if (allProductsValue) {
+                const getProducts = (productIds: string[]) => allProductsValue.filter((product) => productIds.includes(product.id));
+                setProductsByDay(productsByDayStorage().map(getProducts));
+                isStorageLoaded = true;
+            }
+        } catch (e) {}
+    });
+
+    createEffect(() => {
+        const maxPriceValue = dayLimit() - currentDayPrice();
         const [priceFrom, priceTo] = priceRange();
 
         if (maxPriceValue >= priceFrom) {
             setMaxPrice(Math.min(priceTo, maxPriceValue));
         } else {
             setMaxPrice(priceTo);
-            if (currentDayPrice > 0) {
+            if (currentDayPrice() > 0) {
                 addDay();
             }
         }
-    };
-
-    createEffect(checkLimit);
-
-    createEffect(on(allProducts, loadStorage, { defer: true }));
+    });
 
     return (
         <div class="p-4">

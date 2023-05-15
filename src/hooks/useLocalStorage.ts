@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createSignal, onCleanup } from "solid-js";
 
 export default function useLocalStorage<T>(key: string, value: T) {
   const initValue = localStorage.getItem(key);
@@ -18,6 +18,10 @@ export default function useLocalStorage<T>(key: string, value: T) {
     const oldValue = localStorage.getItem(key);
     const newValue = JSON.stringify(value);
 
+    if (oldValue === newValue) {
+      return;
+    }
+
     localStorage.setItem(key, newValue);
 
     window.dispatchEvent(new StorageEvent('storage', {
@@ -30,6 +34,10 @@ export default function useLocalStorage<T>(key: string, value: T) {
   };
 
   window.addEventListener('storage', listener);
+  
+  onCleanup(() => {
+    window.removeEventListener('storage', listener);
+  });
 
   return [state, setter] as const;
 }
