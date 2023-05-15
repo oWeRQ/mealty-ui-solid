@@ -1,15 +1,17 @@
 import { Component, For, createEffect, createMemo, createResource, createSignal, on } from 'solid-js';
+import { arrayRange } from '../functions/arrayRange';
+import { gcd } from '../functions/gcd';
+import useLocalStorage from '../hooks/useLocalStorage';
 import { IMealtyCategoryWithProducts, IMealtyProduct, fetchCategories } from '../mealty';
 import ProductCard from './ProductCard';
 import ProductsSummary from './ProductsSummary';
-import { arrayRange } from '../functions/arrayRange';
-import { gcd } from '../functions/gcd';
 
 const Products: Component = () => {
     const [dayLimit, setDayLimit] = createSignal(370);
     const [search, setSearch] = createSignal('');
     const [maxPrice, setMaxPrice] = createSignal<number>(Infinity);
     const [productsByDay, setProductsByDay] = createSignal<IMealtyProduct[][]>([]);
+    const [productsByDayStorage, setProductsByDayStorage] = useLocalStorage<string[][]>('productsByDay', []);
     const [selectedCategories, setSelectedCategories] = createSignal<IMealtyCategoryWithProducts[]>([]);
     const [categories] = createResource(fetchCategories);
 
@@ -49,13 +51,13 @@ const Products: Component = () => {
 
     const saveStorage = () => {
         const data = productsByDay().map((products) => products.map((product) => product.id));
-        window.localStorage.setItem('productsByDay', JSON.stringify(data));
+        setProductsByDayStorage(data);
     };
 
     const loadStorage = () => {
         try {
             const productsValue = allProducts() ?? [];
-            const data: string[][] = JSON.parse(window.localStorage.getItem('productsByDay') || '[]');
+            const data: string[][] = productsByDayStorage();
             setProductsByDay(data.map((productIds) => productsValue.filter((product) => productIds.includes(product.id))));
         } catch (e) {}
     };
