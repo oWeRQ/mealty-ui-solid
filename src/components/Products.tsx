@@ -147,10 +147,12 @@ const Products: Component = () => {
                     </div>}
                 </For>
             </div>
-            <div class="flex justify-between items-center">
+            <div class="flex gap-6 items-center">
                 <div>
                     <button class="inline-flex justify-center rounded-md bg-indigo-600 py-3 px-6 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500" onClick={addDay}>Add Day</button>
-                    <span class="mx-4">Day limit:</span>
+                </div>
+                <div>
+                    <span class="mr-2">Day limit:</span>
                     <input
                         class="p-2 w-[100px] ring-1 rounded-md"
                         type="number"
